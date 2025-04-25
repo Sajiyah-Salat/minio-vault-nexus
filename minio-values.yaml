@@ -1,0 +1,21 @@
+rootUser: "admin"
+rootPassword: "admin000"
+persistence:
+  enabled: true
+  storageClass: ""
+  #volumeName: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+service:
+  type: LoadBalancer
+consoleService:
+  type: LoadBalancer
+# Number of drives attached to a node
+drivesPerNode: 1
+# Number of MinIO containers running
+replicas: 2
+# Number of expanded MinIO clusters
+pools: 1
+resources:
+  requests:
+    memory: 4Gi

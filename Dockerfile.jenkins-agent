@@ -1,0 +1,39 @@
+FROM --platform=linux/amd64 jenkins/inbound-agent:3301.v4363ddcca_4e7-3
+
+USER root
+ARG HELM_VERSION=v3.17.3
+
+
+RUN apt-get update \
+    && apt-get install -y curl \
+    && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && chmod 755 kubectl \
+    && mv kubectl /bin
+
+RUN curl -fsSL -o helm.tar.gz https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz \
+    && tar -zxvf helm.tar.gz \
+    && mv linux-amd64/helm /usr/local/bin/helm \
+    && chmod +x /usr/local/bin/helm \
+    && rm -rf helm.tar.gz linux-amd64
+
+RUN curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc && \
+    chmod +x /usr/local/bin/mc
+    
+
+# RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+#     && chmod 700 get_helm.sh \
+#     && ./get_helm.sh
+
+# RUN curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null \
+#     && apt-get install apt-transport-https --yes \
+#     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list \
+#     && apt-get update \
+#     && apt-get install helm
+
+# RUN curl https://dl.min.io/client/mc/release/linux-amd64/mc \
+#     --create-dirs \
+#     -o $HOME/minio-binaries/mc \
+#     && chmod +x $HOME/minio-binaries/mc \ 
+#     && export PATH=$PATH:$HOME/minio-binaries/
+
+USER jenkins
