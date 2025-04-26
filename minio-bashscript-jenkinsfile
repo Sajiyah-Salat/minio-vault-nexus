@@ -1,0 +1,63 @@
+pipeline {
+  agent any
+  parameters {
+    string(name: 'MINIO_SRC_ALIAS',defaultValue: 'minio-src', description: 'MinIO server alias for source')
+    string(name: 'MINIO_SRC_URL', defaultValue: 'http://132.220.40.62:9000', description: 'MinIO server URL for source')
+    string(name: 'MINIO_SRC_ACCESS', defaultValue: 'ojvskmn8Pv1R9rVEwaiY', description: 'MinIO Access Key for source')
+    string(name: 'MINIO_SRC_SECRET', defaultValue: 'hOOd0RSWWFeNLQONoqPtKhL7CHz0RrMCSL0DVvLC', description: 'MinIO Secret Key for source')
+
+    string(name: 'MINIO_DEST_ALIAS',defaultValue: 'minio-dest', description: 'MinIO server alias for destination')
+    string(name: 'MINIO_DEST_URL', defaultValue: 'http://132.220.68.43:9000', description: 'MinIO server URL for destination')
+    string(name: 'MINIO_DEST_ACCESS', defaultValue: 'wx8JZbIrnlqOvLUIB0nh', description: 'MinIO Access Key for destination')
+    string(name: 'MINIO_DEST_SECRET', defaultValue: '1dcq3Q8xXHaZcUbskD4t4tgD4UVZUJ4TGQbxD8ZA', description: 'MinIO Secret Key for destination')
+
+  }
+  
+//   environment {
+//     MINIO_SRC_ALIAS = "minio-src"
+//     MINIO_SRC_BUCKET = ""
+//     MINIO_SRC_URL = "http://132.220.40.62:9000"
+//     MINIO_SRC_ACCESS = "ojvskmn8Pv1R9rVEwaiY"
+//     MINIO_SRC_SECRET = "hOOd0RSWWFeNLQONoqPtKhL7CHz0RrMCSL0DVvLC"
+//     MINIO_DEST_ALIAS = "minio-dest"
+//     MINIO_DEST_BUCKET = ""
+//     MINIO_DEST_URL = "http://132.220.68.43:9000"
+//     MINIO_DEST_ACCESS = "wx8JZbIrnlqOvLUIB0nh"
+//     MINIO_DEST_SECRET = "1dcq3Q8xXHaZcUbskD4t4tgD4UVZUJ4TGQbxD8ZA"
+//   }
+
+  stages {
+    // stage('Install mc') {
+    //   steps {
+    //     sh '''
+    //     curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+    //     chmod +x mc
+    //     ./mc alias set ${MINIO_ALIAS} ${MINIO_URL} ${MINIO_ACCESS} ${MINIO_SECRET}
+    //     '''
+    //   }
+    // }
+
+    stage('Upload artifact to MinIO') {
+      steps {
+        sh '''
+        echo "Test artifact" > build-output.txt
+        helm ls -n minio
+        mc alias set ${MINIO_SRC_ALIAS} ${MINIO_SRC_URL} ${MINIO_SRC_ACCESS} ${MINIO_SRC_SECRET}
+        mc alias set ${MINIO_DEST_ALIAS} ${MINIO_DEST_URL} ${MINIO_DEST_ACCESS} ${MINIO_DEST_SECRET}
+        BUCKETS=$(mc ls minio-src | awk '{print $NF}' | sed 's:/$::')
+        echo $BUCKETS
+        for bucket in $BUCKETS; do
+          echo "Processing bucket: $bucket"
+
+          # Create bucket on target if it doesn't exist
+          mc mb --ignore-existing ${MINIO_DEST_ALIAS}/$bucket
+
+          # Mirror content from source to target
+          mc mirror --overwrite ${MINIO_SRC_ALIAS}/$bucket ${MINIO_DEST_ALIAS}/$bucket
+        done
+        '''
+      }
+    }
+  }
+}
+        // mc cp --recursive ${MINIO_SRC_ALIAS}/${MINIO_SRC_BUCKET}/${MINIO_SRC_PATH} ${MINIO_DEST_ALIAS}/${MINIO_DEST_BUCKET}/${MINIO_DEST_PATH}

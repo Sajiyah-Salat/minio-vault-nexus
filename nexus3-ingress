@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexus3-ingress
+spec:
+  ingressClassName: nginx  
+  rules:
+    - host: NEXUS_INGRESS_DOMAIN
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nexus3
+                port:
+                  number: 80

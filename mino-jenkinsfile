@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+    parameters {
+        string(name: 'NAMESPACE',defaultValue: '', description: 'Namespace to install MINIO')
+        string(name: 'RELEASE_NAME',defaultValue: '', description: 'Release Name for helm installation')
+    }
+
+
+
+    environment {
+        KUBECONFIG = ''  // Will be set dynamically
+    }
+
+    stages {
+        stage('Generate values.yaml') {
+            steps {
+                writeFile file: 'values.yaml', text: """
+                    rootUser: "admin"
+                    rootPassword: "admin000"
+                    persistence:
+                      enabled: true
+                      storageClass: ""
+                      #volumeName: ""
+                      accessMode: ReadWriteOnce
+                      size: 10Gi
+                    service:
+                      type: LoadBalancer
+                    consoleService:
+                      type: LoadBalancer
+                    # Number of drives attached to a node
+                    drivesPerNode: 1
+                    # Number of MinIO containers running
+                    replicas: 2
+                    # Number of expanded MinIO clusters
+                    pools: 1
+                    resources:
+                      requests:
+                        memory: 4Gi
+                """
+            }
+        }
+
+        stage('Deploy MinIO with values.yaml') {
+            steps {
+                withCredentials([file(credentialsId: 'aks-config', variable: 'KUBECONFIG')]) {
+                sh '''
+                    helm repo add minio https://charts.min.io/
+                    helm repo update
+
+                    helm upgrade --install ${RELEASE_NAME} minio/minio \
+                      --namespace ${NAMESPACE} \
+                      --create-namespace \
+                      --values values.yaml
+                '''
+                }
+            }
+        }
+    }
+}

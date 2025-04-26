@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+    parameters {
+        string(name: 'NAMESPACE',defaultValue: 'vault', description: 'Namespace to install Hashicorp Vault')
+        string(name: 'RELEASE_NAME',defaultValue: 'vault', description: 'Release Name for helm installation')
+    }
+    environment {
+        KUBECONFIG = credentials('aks-config')  // Jenkins credential with kubeconfig
+    }
+
+    stages {
+        stage('Add HashiCorp Helm Repo') {
+            steps {
+                sh '''
+                    helm repo add hashicorp https://helm.releases.hashicorp.com
+                    helm repo update
+                '''
+            }
+        }
+
+        stage('Install Vault via Helm') {
+            steps {
+                sh '''
+                    helm upgrade --install ${RELEASE_NAME} hashicorp/vault \
+                      --namespace ${NAMESPACE} \
+                      --create-namespace=true \
+                      --set server.ha.enabled=true \
+                      --set server.ha.raft.enabled=true \
+                      --set server.ha.replicas=1 \
+                      --set server.service.type=LoadBalancer \
+                      --set ui.enabled=true
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Vault has been installed on Kubernetes successfully."
+        }
+        failure {
+            echo "Vault installation failed. Check logs above."
+        }
+    }
+}
